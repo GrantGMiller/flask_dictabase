@@ -2,6 +2,12 @@ Flask-Dictabase
 ===============
 A dict() like interface to your database.
 
+Install
+=======
+::
+
+    pip install flask_dictabase
+
 Here is a simple flask app implementation.
 ::
 
