@@ -111,7 +111,7 @@ class BaseTable(dict):
     def __str__(self):
         '''
 
-        :return: string like '<BaseDictabaseTable: email=me@website.com, name=John>'
+        :return: string like '<BaseTable: email=me@website.com(type=str), name=John(type=str), age=33(type=int)>'
         '''
         itemsList = []
         for k, v, in self.items():
