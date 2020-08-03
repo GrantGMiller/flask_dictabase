@@ -1,4 +1,3 @@
-import dictabase
 import dataset
 from flask import _app_ctx_stack, current_app
 
