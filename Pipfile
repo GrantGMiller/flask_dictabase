@@ -9,7 +9,6 @@ verify_ssl = true
 flask = "*"
 twine = "*"
 dataset = "*"
-dictabase = "*"
 
 [requires]
 python_version = "3.8"
