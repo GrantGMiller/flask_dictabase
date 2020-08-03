@@ -77,7 +77,7 @@ Here is a simple flask app implementation.
 Gunicorn
 ========
 
-Supports multiple workers (-w config options.
-Example:
-`gunicorn main:app -w 4 -b localhost:8080`
+Supports multiple workers (-w config option).
+Example::
 
+    gunicorn main:app -w 4 -b localhost:8080
