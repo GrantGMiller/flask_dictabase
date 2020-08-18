@@ -1,5 +1,5 @@
 import dataset
-from flask import _app_ctx_stack, current_app
+from flask import current_app, _app_ctx_stack
 
 DEBUG = False
 
@@ -9,27 +9,35 @@ class Dictabase:
         self.app = app
         if app is not None:
             self.init_app(app)
+        self.app.app_context()
 
     def init_app(self, app):
         app.config.setdefault('DATABASE_URL', 'sqlite:///dictabase.db')
         app.teardown_appcontext(self.teardown)
+
+    def _GetDB(self):
+        return dataset.connect(
+            self.app.config['DATABASE_URL'],
+            engine_kwargs={'connect_args': {'check_same_thread': False}} if 'sqlite' in self.app.config[
+                'DATABASE_URL'] else None,
+        )
 
     @property
     def db(self):
         ctx = _app_ctx_stack.top
         if ctx is not None:
             if not hasattr(ctx, 'db'):
-                ctx.db = dataset.connect(
-                    current_app.config['DATABASE_URL'],
-                    engine_kwargs={'connect_args': {'check_same_thread': False}} if 'sqlite' in current_app.config[
-                        'DATABASE_URL'] else None,
-                )
-        return ctx.db
+                ctx.db = self._GetDB()
+                with ctx.db.lock:
+                    return ctx.db
+            return ctx.db
+        return self._GetDB()
 
     def teardown(self, exception):
         self.db.close()
 
     def FindAll(self, cls, **kwargs):
+
         reverse = kwargs.pop('_reverse', False)  # bool
         orderBy = kwargs.pop('_orderBy', None)  # str
         if reverse is True:
@@ -57,14 +65,12 @@ class Dictabase:
             return None
 
     def New(self, cls, **kwargs):
-        print('New(cls=', cls, ', kwargs=', kwargs)
         ret = None
         with self.db.lock:
             self.db.begin()
             newID = self.db[cls.__name__].insert(dict(**kwargs))
             self.db.commit()
             ret = cls(db=self, id=newID, **kwargs)
-            print('ret=', ret)
         return ret
 
     def Upsert(self, obj):
@@ -76,7 +82,6 @@ class Dictabase:
         return ret
 
     def Delete(self, obj):
-        print('Delete(obj=', obj)
         ret = None
         with self.db.lock:
             self.db.begin()
@@ -99,7 +104,6 @@ class BaseTable(dict):
         super().__init__(*a, **k)
 
     def Commit(self):
-        print('Commit(self=', self)
         ret = self.db.Upsert(self)
         return ret
 
