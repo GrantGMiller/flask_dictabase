@@ -74,6 +74,39 @@ Here is a simple flask app implementation.
             threaded=True,
         )
 
+Unsupported Types
+=================
+If you want to store more complex information like list() and dict(), you can use the .Set() and .Get() helper methods.
+These convert your values to/from json to be stored in the db as a string.
+
+::
+
+    myList = [1,2,3,4,5] #
+    user = db.FindOne(UserClass, id=1)
+    if user:
+        user.Set('myList', myList)
+
+    user2 = db.FindOne(UserClass, id=1)
+    print('user2.Get('myList')=', user2.Get('myList'))
+
+Output
+::
+
+    >>> user2.Get('myList')= [1, 2, 3, 4, 5]
+
+You can also use a different function to load/dump the values. Like python's pickle module.
+::
+
+    import pickle
+    myList = [1,2,3,4,5] #
+    user = db.FindOne(UserClass, id=1)
+    if user:
+        user.Set('myList', myList, dumper=pickle.dumps, dumperKwargs={})
+
+    user2 = db.FindOne(UserClass, id=1)
+    print('user2.Get('myList')=', user2.Get('myList', loader=pickle.loads))
+
+
 Gunicorn
 ========
 

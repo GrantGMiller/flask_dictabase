@@ -1,3 +1,5 @@
+import json
+
 import dataset
 from flask import current_app, _app_ctx_stack
 
@@ -34,7 +36,10 @@ class Dictabase:
         return self._GetDB()
 
     def teardown(self, exception):
-        self.db.close()
+        try:
+            self.db.close()
+        except:
+            pass
 
     def FindAll(self, cls, **kwargs):
 
@@ -136,3 +141,13 @@ class BaseTable(dict):
 
     def __repr__(self):
         return str(self)
+
+    def Get(self, key, loader=json.loads):
+        value = self.get(key, None)
+        if value:
+            value = loader(value)
+        return value
+
+    def Set(self, key, value, dumper=json.dumps, dumperKwargs={'indent': 2, 'sort_keys': True}):
+        value = dumper(value, **dumperKwargs)
+        self[key] = value
