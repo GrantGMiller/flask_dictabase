@@ -106,6 +106,11 @@ You can also use a different function to load/dump the values. Like python's pic
     user2 = db.FindOne(UserClass, id=1)
     print('user2.Get('myList')=', user2.Get('myList', loader=pickle.loads))
 
+You can also provide a default argument to .Get()
+::
+
+    user = db.FindOne(UserClass, id=1)
+    user.Get('missingKey', None) # return None if key is missing, else return the dumped value
 
 Gunicorn
 ========

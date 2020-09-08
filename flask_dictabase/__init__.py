@@ -116,6 +116,10 @@ class BaseTable(dict):
         super().__setitem__(*a, **k)
         self.Commit()
 
+    def update(self, *a, **k):
+        super().update(*a, **k)
+        self.Commit()
+
     def __str__(self):
         '''
 
@@ -142,10 +146,12 @@ class BaseTable(dict):
     def __repr__(self):
         return str(self)
 
-    def Get(self, key, loader=json.loads):
+    def Get(self, key, default=None, loader=json.loads):
         value = self.get(key, None)
         if value:
             value = loader(value)
+        else:
+            value = default
         return value
 
     def Set(self, key, value, dumper=json.dumps, dumperKwargs={'indent': 2, 'sort_keys': True}):
