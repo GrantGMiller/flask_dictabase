@@ -42,6 +42,7 @@ class Dictabase:
             pass
 
     def FindAll(self, cls, **kwargs):
+        tableName = cls if isinstance(cls, str) else cls.__name__
 
         reverse = kwargs.pop('_reverse', False)  # bool
         orderBy = kwargs.pop('_orderBy', None)  # str
@@ -52,17 +53,20 @@ class Dictabase:
                 orderBy = '-id'
 
         if orderBy is not None:
-            for obj in self.db[cls.__name__].find(
+            for obj in self.db[tableName].find(
                     order_by=[f'{orderBy}'],
                     **kwargs
             ):
                 yield cls(db=self, **obj)
         else:
-            for obj in self.db[cls.__name__].find(**kwargs):
+            for obj in self.db[tableName].find(**kwargs):
                 yield cls(db=self, **obj)
 
     def FindOne(self, cls, **kwargs):
-        ret = self.db[cls.__name__].find_one(**kwargs)
+        tableName = cls if isinstance(cls, str) else cls.__name__
+
+        ret = self.db[tableName].find_one(**kwargs)
+
         if ret:
             ret = cls(db=self, **ret)
             return ret
@@ -70,10 +74,12 @@ class Dictabase:
             return None
 
     def New(self, cls, **kwargs):
+        tableName = cls if isinstance(cls, str) else cls.__name__
+
         ret = None
         with self.db.lock:
             self.db.begin()
-            newID = self.db[cls.__name__].insert(dict(**kwargs))
+            newID = self.db[tableName].insert(dict(**kwargs))
             self.db.commit()
             ret = cls(db=self, id=newID, **kwargs)
         return ret
@@ -95,10 +101,12 @@ class Dictabase:
         return ret
 
     def Drop(self, cls, confirm=False):
+        tableName = cls if isinstance(cls, str) else cls.__name__
+
         if confirm is False:
             raise Exception('You must pass confirm=True to Drop a table.')
         self.db.begin()
-        ret = self.db[cls.__name__].drop()
+        ret = self.db[tableName].drop()
         self.db.commit()
         return ret
 
