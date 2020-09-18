@@ -94,6 +94,17 @@ Output
 
     >>> user2.Get('myList')= [1, 2, 3, 4, 5]
 
+You can use the helper methods .Append() and .SetItem() to easliy save list() and dict()
+::
+
+    user.Append('myList', 9)
+    print('user2.Get('myList')=', user2.Get('myList'))
+
+Output
+::
+
+    >>> user2.Get('myList')= [1, 2, 3, 4, 5, 9]
+
 You can also use a different function to load/dump the values. Like python's pickle module.
 ::
 

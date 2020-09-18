@@ -57,10 +57,10 @@ class Dictabase:
                     order_by=[f'{orderBy}'],
                     **kwargs
             ):
-                yield cls(db=self, **obj)
+                yield cls(db=self, app=self.app, **obj)
         else:
             for obj in self.db[tableName].find(**kwargs):
-                yield cls(db=self, **obj)
+                yield cls(db=self, app=self.app, **obj)
 
     def FindOne(self, cls, **kwargs):
         tableName = cls if isinstance(cls, str) else cls.__name__
@@ -68,7 +68,7 @@ class Dictabase:
         ret = self.db[tableName].find_one(**kwargs)
 
         if ret:
-            ret = cls(db=self, **ret)
+            ret = cls(db=self, app=self.app, **ret)
             return ret
         else:
             return None
@@ -81,7 +81,7 @@ class Dictabase:
             self.db.begin()
             newID = self.db[tableName].insert(dict(**kwargs))
             self.db.commit()
-            ret = cls(db=self, id=newID, **kwargs)
+            ret = cls(db=self, app=self.app, id=newID, **kwargs)
         return ret
 
     def Upsert(self, obj):
@@ -114,6 +114,7 @@ class Dictabase:
 class BaseTable(dict):
     def __init__(self, *a, **k):
         self.db = k.pop('db')
+        self.app = k.pop('app')
         super().__init__(*a, **k)
 
     def Commit(self):
@@ -165,3 +166,39 @@ class BaseTable(dict):
     def Set(self, key, value, dumper=json.dumps, dumperKwargs={'indent': 2, 'sort_keys': True}):
         value = dumper(value, **dumperKwargs)
         self[key] = value
+
+    def Append(self, key, value):
+        '''
+        Usage:
+            self.Append('items', item)
+
+        Is equal to:
+            items = self.Get('items', [])
+            items.append(item)
+            self.Set('items', items)
+
+        :param key:
+        :param value:
+        :return:
+        '''
+        items = self.Get(key, [])
+        items.append(value)
+        self.Set(key, items)
+
+    def SetItem(self, key, subKey, value):
+        '''
+        Usage:
+            self.SetItem(key, subKey, value)
+
+        Is equal to:
+            items = self.Get(key, {})
+            items[subKey] = value
+            self.Set(key, items)
+
+        :param key:
+        :param value:
+        :return:
+        '''
+        items = self.Get(key, {})
+        items[subKey] = value
+        self.Set(key, items)
