@@ -55,6 +55,7 @@ class Dictabase:
 
         if orderBy is not None:
             with self.db.lock:
+                self.WaitForTransactionsToComplete()
                 for obj in self.db[tableName].find(
                         order_by=[f'{orderBy}'],
                         **kwargs
@@ -62,13 +63,22 @@ class Dictabase:
                     yield cls(db=self, app=self.app, **obj)
         else:
             with self.db.lock:
+                self.WaitForTransactionsToComplete()
                 for obj in self.db[tableName].find(**kwargs):
                     yield cls(db=self, app=self.app, **obj)
+
+    def WaitForTransactionsToComplete(self, timeout=5):
+        startTime = time.time()
+        while time.time() - startTime < timeout:
+            if not self.db.in_transaction:
+                break
+            time.sleep(0.1)
 
     def FindOne(self, cls, **kwargs):
         tableName = cls if isinstance(cls, str) else cls.__name__
 
         with self.db.lock:
+            self.WaitForTransactionsToComplete()
             ret = self.db[tableName].find_one(**kwargs)
 
         if ret:
@@ -82,6 +92,7 @@ class Dictabase:
 
         ret = None
         with self.db.lock:
+            self.WaitForTransactionsToComplete()
             self.db.begin()
             newID = self.db[tableName].insert(dict(**kwargs))
             self.db.commit()
@@ -91,6 +102,7 @@ class Dictabase:
     def Upsert(self, obj):
         ret = None
         with self.db.lock:
+            self.WaitForTransactionsToComplete()
             self.db.begin()
             ret = self.db[type(obj).__name__].upsert(dict(obj), ['id'])
             self.db.commit()
@@ -99,6 +111,7 @@ class Dictabase:
     def Delete(self, obj):
         ret = None
         with self.db.lock:
+            self.WaitForTransactionsToComplete()
             self.db.begin()
             ret = self.db[type(obj).__name__].delete(id=obj['id'])
             self.db.commit()
@@ -110,6 +123,7 @@ class Dictabase:
         if confirm is False:
             raise Exception('You must pass confirm=True to Drop a table.')
         with self.db.lock:
+            self.WaitForTransactionsToComplete()
             self.db.begin()
             ret = self.db[tableName].drop()
             self.db.commit()
