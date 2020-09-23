@@ -1,4 +1,5 @@
 import json
+import time
 
 import dataset
 from flask import current_app, _app_ctx_stack
@@ -53,19 +54,22 @@ class Dictabase:
                 orderBy = '-id'
 
         if orderBy is not None:
-            for obj in self.db[tableName].find(
-                    order_by=[f'{orderBy}'],
-                    **kwargs
-            ):
-                yield cls(db=self, app=self.app, **obj)
+            with self.db.lock:
+                for obj in self.db[tableName].find(
+                        order_by=[f'{orderBy}'],
+                        **kwargs
+                ):
+                    yield cls(db=self, app=self.app, **obj)
         else:
-            for obj in self.db[tableName].find(**kwargs):
-                yield cls(db=self, app=self.app, **obj)
+            with self.db.lock:
+                for obj in self.db[tableName].find(**kwargs):
+                    yield cls(db=self, app=self.app, **obj)
 
     def FindOne(self, cls, **kwargs):
         tableName = cls if isinstance(cls, str) else cls.__name__
 
-        ret = self.db[tableName].find_one(**kwargs)
+        with self.db.lock:
+            ret = self.db[tableName].find_one(**kwargs)
 
         if ret:
             ret = cls(db=self, app=self.app, **ret)
@@ -105,9 +109,10 @@ class Dictabase:
 
         if confirm is False:
             raise Exception('You must pass confirm=True to Drop a table.')
-        self.db.begin()
-        ret = self.db[tableName].drop()
-        self.db.commit()
+        with self.db.lock:
+            self.db.begin()
+            ret = self.db[tableName].drop()
+            self.db.commit()
         return ret
 
 

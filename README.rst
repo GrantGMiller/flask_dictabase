@@ -28,8 +28,15 @@ Here is a simple flask app implementation.
 
 
     class UserClass(flask_dictabase.BaseTable):
-        pass
+        def CustomMethod(self):
+            # You can access the db from within a BaseTable object.
+            allUsers = self.db.FindAll(UserClass)
+            numOfUsers = len(allUsers)
+            print('There are {} total users in the database.'.format(numOfUsers)
 
+            # You can also access the app from within a BaseTable object
+            if self.app.config.get('SECRET_KEY', None) is None:
+                print('This app has no secret key')
 
     @app.route('/')
     def Index():
