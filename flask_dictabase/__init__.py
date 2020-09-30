@@ -1,6 +1,6 @@
 import json
 import time
-
+import datetime
 import dataset
 from flask import current_app, _app_ctx_stack
 
@@ -13,6 +13,11 @@ class Dictabase:
         if app is not None:
             self.init_app(app)
         self.app.app_context()
+        self.logger = None
+
+    def print(self, *args):
+        if self.logger:
+            self.logger(f'{datetime.datetime.now()}: ' + ' '.join(str(a) for a in args))
 
     def init_app(self, app):
         app.config.setdefault('DATABASE_URL', 'sqlite:///dictabase.db')
@@ -28,13 +33,21 @@ class Dictabase:
     @property
     def db(self):
         ctx = _app_ctx_stack.top
+        self.print('_app_ctx_stack.top=', ctx)
         if ctx is not None:
             if not hasattr(ctx, 'db'):
+                # create a new db connection and attach it to this context
                 ctx.db = self._GetDB()
                 with ctx.db.lock:
-                    return ctx.db
+                    ret = ctx.db
+                    self.print('return with ctx.db.lock=', ret)
+                    return ret
+
+            self.print('return ctx.db=', ctx.db)
             return ctx.db
-        return self._GetDB()
+
+        raise RuntimeError(
+            'No AppContext found. You probably tried to access this database from outside a request context (aka outside a View function). Try using "with app.app_context(): DoThing()" instead.')
 
     def teardown(self, exception):
         try:
@@ -203,6 +216,7 @@ class BaseTable(dict):
         items = self.Get(key, [])
         items.append(value)
         self.Set(key, items)
+        self.Commit()
 
     def SetItem(self, key, subKey, value):
         '''
@@ -221,3 +235,4 @@ class BaseTable(dict):
         items = self.Get(key, {})
         items[subKey] = value
         self.Set(key, items)
+        self.Commit()
