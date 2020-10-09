@@ -81,8 +81,8 @@ Here is a simple flask app implementation.
             threaded=True,
         )
 
-Unsupported Types
-=================
+Unsupported Types / Advanced Usage
+==================================
 If you want to store more complex information like list() and dict(), you can use the .Set() and .Get() helper methods.
 These convert your values to/from json to be stored in the db as a string.
 
@@ -129,6 +129,36 @@ You can also provide a default argument to .Get()
 
     user = db.FindOne(UserClass, id=1)
     user.Get('missingKey', None) # return None if key is missing, else return the dumped value
+
+You can also use the methods .Append() .Remove() and .SetItem() and .PopItem() to easily manipulate the info stored as JSON
+::
+
+    user = db.FindOne(UserClass, id=1)
+    user.Set('animals', ['cat', 'dog', 'bird'])
+
+    print('user.Get("animals")=', user.Get('animals'))
+    >>> user.Get("animals")= ['cat', 'dog', 'bird']
+
+    user.Append('animals', 'tiger')
+    print('user.Get("animals")=', user.Get('animals'))
+    >>> user.Get("animals")= ['cat', 'dog', 'bird', 'tiger']
+
+    user.Remove('animals', 'cat')
+    print('user.Get("animals")=', user.Get('animals'))
+    >>> user.Get("animals")= ['dog', 'bird', 'tiger']
+
+    user.Set('numOfPets', {'cats': 1, 'dog': 1})
+    print('user.Get("numOfPets")=', user.Get('numOfPets'))
+    >>> user.Get("numOfPets")= {'cats': 1, 'dog': 1}
+
+    user.SetItem('numOfPets', 'cats', 3)
+    print('user.Get("numOfPets")=', user.Get('numOfPets'))
+    >>> user.Get("numOfPets")= {'cats': 3, 'dog': 1}
+
+    user.PopItem('numOfPets', 'cats')
+    print('user.Get("numOfPets")=', user.Get('numOfPets'))
+    >>> user.Get("numOfPets")= {'dog': 1}
+
 
 Gunicorn
 ========

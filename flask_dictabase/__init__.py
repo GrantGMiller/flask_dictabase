@@ -198,6 +198,12 @@ class BaseTable(dict):
     def Set(self, key, value, dumper=json.dumps, dumperKwargs={'indent': 2, 'sort_keys': True}):
         value = dumper(value, **dumperKwargs)
         self[key] = value
+        self.Commit()
+
+    def Remove(self, key, value):
+        l = self.Get(key, [])
+        l.remove(value)
+        self.Set(key, l)
 
     def Append(self, key, value):
         '''
@@ -216,7 +222,6 @@ class BaseTable(dict):
         items = self.Get(key, [])
         items.append(value)
         self.Set(key, items)
-        self.Commit()
 
     def SetItem(self, key, subKey, value):
         '''
@@ -235,4 +240,9 @@ class BaseTable(dict):
         items = self.Get(key, {})
         items[subKey] = value
         self.Set(key, items)
-        self.Commit()
+
+    def PopItem(self, key, subkey, default=None):
+        d = self.Get(key, {})
+        ret = d.pop(subkey, default)
+        self.Set(key, d)
+        return ret
