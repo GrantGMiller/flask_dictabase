@@ -144,6 +144,7 @@ class Dictabase:
 
 
 class BaseTable(dict):
+
     def __init__(self, *a, **k):
         self.db = k.pop('db')
         self.app = k.pop('app')
@@ -240,6 +241,11 @@ class BaseTable(dict):
         items = self.Get(key, {})
         items[subKey] = value
         self.Set(key, items)
+
+    def GetItem(self, key, subkey, default):
+        d = self.Get(key, {})
+        ret = d.get(subkey, default)
+        return ret
 
     def PopItem(self, key, subkey, default=None):
         d = self.Get(key, {})
