@@ -14,6 +14,7 @@ class Dictabase:
             self.init_app(app)
         self.app.app_context()
         self.logger = None
+        self.var = VariableManager(self)
 
     def print(self, *args):
         if self.logger:
@@ -111,6 +112,14 @@ class Dictabase:
             self.db.commit()
             ret = cls(db=self, app=self.app, id=newID, **kwargs)
         return ret
+
+    def NewOrFind(self, cls, **kwargs):
+        # Looks in the database for an existing object, if none, create a new row and return it
+        ret = self.FindOne(cls, **kwargs)
+        if ret:
+            return ret  # an object exist already, return it
+        else:
+            return self.New(cls, **kwargs)  # create a new object and return it
 
     def Upsert(self, obj):
         ret = None
@@ -242,7 +251,7 @@ class BaseTable(dict):
         items[subKey] = value
         self.Set(key, items)
 
-    def GetItem(self, key, subkey, default):
+    def GetItem(self, key, subkey, default=None):
         d = self.Get(key, {})
         ret = d.get(subkey, default)
         return ret
@@ -252,3 +261,24 @@ class BaseTable(dict):
         ret = d.pop(subkey, default)
         self.Set(key, d)
         return ret
+
+
+class VariableManager:
+    def __init__(self, db):
+        self.db = db
+
+    def Set(self, name, value):
+        v = self.db.FindOne(Var, name=name)
+        if v is None:
+            v = self.db.New(Var, name=name)
+        v.Set('value', value)
+
+    def Get(self, name, default=None):
+        v = self.db.FindOne(Var, name=name)
+        if v is None:
+            v = self.db.New(Var, name=name)
+        return v.Get('value', default)
+
+
+class Var(BaseTable):
+    pass

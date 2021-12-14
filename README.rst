@@ -159,6 +159,23 @@ You can also use the methods .Append() .Remove() and .SetItem() and .PopItem() t
     print('user.Get("numOfPets")=', user.Get('numOfPets'))
     >>> user.Get("numOfPets")= {'dog': 1}
 
+Variables
+=========
+Kind of like Global Variables but stored in the database.
+Example::
+
+    db.var.Set('nameOfTheVariable', 'valueOfTheVariable')
+
+    # set/get generic variables
+    @app.route('/set/<key>/<value>')
+    def Set(key, value):
+        db.var.Set(key, value)
+        return f'Set {key}={value}'
+
+
+    @app.route('/get/<key>')
+    def Get(key):
+        return db.var.Get(key)
 
 Gunicorn
 ========
