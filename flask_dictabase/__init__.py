@@ -57,6 +57,16 @@ class Dictabase:
             pass
 
     def FindAll(self, cls, **kwargs):
+        """
+        You can paginate by passing {'_offset': int(number)} in kwargs.
+        You can limit the number of results by passing {'_limit': int(howmany)} in kwargs.
+        You can reverse the order of results by passing {'_reverse: True} in kwargs.
+        You can order the results by a column by passing {'_orderBy': str(columnName)} in kwargs.
+
+        :param cls:
+        :param kwargs:
+        :return: generator, yields BaseTable-subclass objects
+        """
         tableName = cls if isinstance(cls, str) else cls.__name__
 
         reverse = kwargs.pop('_reverse', False)  # bool
@@ -210,12 +220,22 @@ class BaseTable(dict):
         self[key] = value
         self.Commit()
 
-    def Remove(self, key, value):
+    def Remove(self, key, value, removeAll=False):
+        """
+
+        :param key:
+        :param value:
+        :param removeAll: bool > if True, will remove all matching values
+        :return:
+        """
         l = self.Get(key, [])
         l.remove(value)
+        if removeAll:
+            while value in l:
+                l.remove(value)
         self.Set(key, l)
 
-    def Append(self, key, value):
+    def Append(self, key, value, allowDuplicates=True):
         '''
         Usage:
             self.Append('items', item)
@@ -227,11 +247,15 @@ class BaseTable(dict):
 
         :param key:
         :param value:
+        :param allowDuplicates: bool > True means the list can contain duplicates
         :return:
         '''
         items = self.Get(key, [])
-        items.append(value)
-        self.Set(key, items)
+        if allowDuplicates is False and value in items:
+            return
+        else:
+            items.append(value)
+            self.Set(key, items)
 
     def SetItem(self, key, subKey, value):
         '''
@@ -261,6 +285,15 @@ class BaseTable(dict):
         ret = d.pop(subkey, default)
         self.Set(key, d)
         return ret
+
+    @property
+    def Count(self):
+        """
+
+        :return: int, total number of rows for this table
+        """
+        tableName = type(self).__name__
+        return self.db[tableName].count()
 
 
 class VariableManager:
