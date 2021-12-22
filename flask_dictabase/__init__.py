@@ -1,4 +1,5 @@
 import json
+import pickle
 import time
 import datetime
 import dataset
@@ -141,6 +142,10 @@ class Dictabase:
         return ret
 
     def Delete(self, obj):
+        # break all links first
+        for item in obj.Links():
+            obj.Unlink(item)
+
         ret = None
         with self.db.lock:
             self.WaitForTransactionsToComplete()
@@ -294,6 +299,45 @@ class BaseTable(dict):
         """
         tableName = type(self).__name__
         return self.db[tableName].count()
+
+    def Link(self, obj, doubleLink=True):
+        linkList = self.Get('_links', [], loader=pickle.loads)
+        d = {
+            'class': type(obj),
+            'id': obj['id'],
+        }
+        if d not in linkList:  # no duplicates please
+            linkList.append(d)
+
+        self.Set('_links', linkList, dumper=pickle.dumps, dumperKwargs={})
+
+        if doubleLink:
+            obj.Link(self, doubleLink=False)
+
+    def Unlink(self, obj, doubleUnlink=True):
+        linkList = self.Get('_links', [], loader=pickle.loads)
+        d = {
+            'class': type(obj),
+            'id': obj['id'],
+        }
+        if d in linkList:  # no duplicates please
+            linkList.remove(d)
+
+        self.Set('_links', linkList, dumper=pickle.dumps, dumperKwargs={})
+
+        if doubleUnlink:
+            obj.Unlink(self, doubleUnlink=False)
+
+    def Links(self, cls=None, **kwargs):
+        linkList = self.Get('_links', [], loader=pickle.loads)
+        for item in linkList:
+            if item['class'] == cls or cls is None:
+                obj = self.db.FindOne(cls or item['class'], id=item['id'])
+                for k, v in kwargs.items():
+                    if obj[k] != v:
+                        break
+                else:
+                    yield obj
 
 
 class VariableManager:

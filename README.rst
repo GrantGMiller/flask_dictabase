@@ -177,6 +177,60 @@ Example::
     def Get(key):
         return db.var.Get(key)
 
+Database Relationships
+======================
+
+You can link database objects together to easily reference one object from another.
+Use the `BaseTable.Link()` and `BaseTable.Unlink()` to create/delete the relationships.
+Use `BaseTable.Links()` to iterate through the relationships.
+
+::
+
+    class Player(flask_dictabase.BaseTable):
+        pass
+
+    player = app.db.NewOrFind(Player, name='Grant')
+    print('player=', player)
+
+    class Card(flask_dictabase.BaseTable):
+        pass
+
+    SUITS = ['club', 'spade', 'heart', 'diamond']
+    VALUES = ['ace', 'jack', 'queen', 'king'] + [i for i in range(2, 10 + 1)]
+
+    # create all the cards in the database
+    for suit in SUITS:
+        for value in VALUES:
+            # note: NewOrFind() will look in the database for the object,
+            # if it doesnt find any, it will create a new object.
+            app.db.NewOrFind(Card, suit=suit, value=value)
+
+    # give the player some cards
+    for i in range(5):
+        suit = random.choice(SUITS)
+        value = random.choice(VALUES)
+
+        player.Link(
+            app.db.NewOrFind(Card, suit=suit, value=value)
+        )
+
+    print('The cards in the players hand are:')
+    for card in player.Links(Card):
+        print('card=', card)
+
+    print('the player is holding the following cards that are hearts')
+    for card in player.Links(Card, suit='heart'):
+        print('card=', card)
+
+    for index, obj in enumerate(player.Links(Card)):
+        if index % 3 == 0:
+            player.Unlink(obj)
+            print('player discarded the card=', obj)
+
+    card = app.db.NewOrFind(Card, suit='heart', value='queen')
+    for obj in card.Links():
+        print('the queen of hearts is held by player=', obj)
+
 Gunicorn
 ========
 
