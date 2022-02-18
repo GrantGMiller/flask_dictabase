@@ -35,8 +35,9 @@ class Card(flask_dictabase.BaseTable):
 with app.app_context():
     SUITS = ['club', 'spade', 'heart', 'diamond']
     VALUES = ['ace', 'jack', 'queen', 'king'] + [i for i in range(2, 10 + 1)]
+
     player = app.db.NewOrFind(Player, name='Grant')
-    print('user=', player)
+    print('player=', player)
 
     # create all the cards in the database
     for suit in SUITS:

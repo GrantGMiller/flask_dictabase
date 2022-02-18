@@ -186,6 +186,14 @@ class BaseTable(dict):
         super().update(*a, **k)
         self.Commit()
 
+    def Update(self, d):
+        # same as update, but accounts converts value of type list/dict to json
+        for k, v in d.items():
+            if isinstance(v, (list, dict)):
+                self.Set(k, v)
+            else:
+                self[k] = v
+
     def __str__(self):
         '''
 

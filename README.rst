@@ -231,6 +231,18 @@ Use `BaseTable.Links()` to iterate through the relationships.
     for obj in card.Links():
         print('the queen of hearts is held by player=', obj)
 
+    >>>
+    player= <Player: id=1(type=int), name=Grant(type=str)>
+    The cards in the players hand are:
+    card= <Card: id=50(type=int), suit=diamond(type=str), value=8(type=str)>
+    card= <Card: id=44(type=int), suit=diamond(type=str), value=2(type=str)>
+    card= <Card: id=10(type=int), suit=club(type=str), value=7(type=str)>
+    card= <Card: id=24(type=int), suit=spade(type=str), value=8(type=str)>
+    card= <Card: id=39(type=int), suit=heart(type=str), value=10(type=str)>
+    the player is holding the following cards that are hearts
+    card= <Card: id=39(type=int), suit=heart(type=str), value=10(type=str)>
+    player discarded the card= <Card: id=50(type=int), suit=diamond(type=str), value=8(type=str)>
+
 Gunicorn
 ========
 
