@@ -71,26 +71,44 @@ class Dictabase:
         """
         tableName = cls if isinstance(cls, str) else cls.__name__
 
-        where = kwargs.pop('_where', None)
-        lessThan = kwargs.pop('_lessThan', None)
-        lessThanOrEqualTo = kwargs.pop('_lessThanOrEqualTo', None)
-        greaterThan = kwargs.pop('_greaterThan', None)
-        greaterThanOrEqualTo = kwargs.pop('_greaterThanOrEqualTo', None)
-        equals = kwargs.pop('_equals', None)
-
         args = []
-        if where:
-            if lessThan:
-                args.append(getattr(self.db[tableName].table.columns, where) < lessThan)
-            if lessThanOrEqualTo:
-                args.append(getattr(self.db[tableName].table.columns, where) <= lessThanOrEqualTo)
-            if greaterThan:
-                args.append(getattr(self.db[tableName].table.columns, where) > greaterThan)
-            if greaterThanOrEqualTo:
-                args.append(getattr(self.db[tableName].table.columns, where) >= greaterThanOrEqualTo)
-            if equals:
-                args.append(getattr(self.db[tableName].table.columns, where) == equals)
+        # handle the _where keywords
+        i = 1
+        while True:
+            # the user can have multiple '_where' statements
+            # each group is designated by a different number of preceeding '_'
+            # example:
+            # ret = app.db.FindAll(
+            #     Person,
+            #     _where='birth_month',
+            #     _equals=3,
+            #
+            #     __where='birth_day',
+            #     __equals=11,
+            # )
+            where = kwargs.pop('_' * i + 'where', None)
+            lessThan = kwargs.pop('_' * i + 'lessThan', None)
+            lessThanOrEqualTo = kwargs.pop('_' * i + 'lessThanOrEqualTo', None)
+            greaterThan = kwargs.pop('_' * i + 'greaterThan', None)
+            greaterThanOrEqualTo = kwargs.pop('_' * i + 'greaterThanOrEqualTo', None)
+            equals = kwargs.pop('_' * i + 'equals', None)
 
+            if where:
+                if lessThan:
+                    args.append(getattr(self.db[tableName].table.columns, where) < lessThan)
+                if lessThanOrEqualTo:
+                    args.append(getattr(self.db[tableName].table.columns, where) <= lessThanOrEqualTo)
+                if greaterThan:
+                    args.append(getattr(self.db[tableName].table.columns, where) > greaterThan)
+                if greaterThanOrEqualTo:
+                    args.append(getattr(self.db[tableName].table.columns, where) >= greaterThanOrEqualTo)
+                if equals:
+                    args.append(getattr(self.db[tableName].table.columns, where) == equals)
+            else:
+                break
+            i += 1
+
+        # handle the other keywords
         reverse = kwargs.pop('_reverse', False)  # bool
         orderBy = kwargs.pop('_orderBy', None)  # str
         if reverse is True:

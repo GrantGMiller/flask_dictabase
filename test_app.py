@@ -75,5 +75,11 @@ with app.app_context():
     card2.Update({'list': ['one', 'two'], 'dict': {'1': 'one', '2': 'two', 'time': time.asctime()}})
     print('card.Update card2=', dict(card2))
 
+    for card in app.db.FindAll(Card, _where='suit', _equals='heart', _limit=5):
+        print('hearts card=', card)
+
+    for card in app.db.FindAll(Card, _where='suit', _equals='spade', __where='value', __equals='ace'):
+        print('Ace of spaces card=', card)
+
 if __name__ == '__main__':
     app.run(debug=True)
