@@ -1,5 +1,6 @@
 import random
 import string
+import time
 
 from flask import (
     Flask,
@@ -69,6 +70,10 @@ with app.app_context():
     card = app.db.NewOrFind(Card, suit='heart', value='queen')
     for obj in card.Links():
         print('the queen of hearts is held by player=', obj)
+
+    card2 = app.db.NewOrFind(Card, suit='grant', value='ace')
+    card2.Update({'list': ['one', 'two'], 'dict': {'1': 'one', '2': 'two', 'time': time.asctime()}})
+    print('card.Update card2=', dict(card2))
 
 if __name__ == '__main__':
     app.run(debug=True)

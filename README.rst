@@ -243,6 +243,22 @@ Use `BaseTable.Links()` to iterate through the relationships.
     card= <Card: id=39(type=int), suit=heart(type=str), value=10(type=str)>
     player discarded the card= <Card: id=50(type=int), suit=diamond(type=str), value=8(type=str)>
 
+Find Rows By Range
+==================
+You can use the '_where' keyword with '_greaterThan', '_lessThan', '_lessThanOrEqualTo', '_greaterThanOrEqualTo', '_equals'.
+
+::
+
+    users = app.db.FindAll(User, _where='age', _greaterThan=18)
+    print('These are the users over age 18:')
+    for user in users:
+        print(user)
+
+    users = app.db.FindAll(User, _where='age', _greaterThanOrEqualTo=18, _lessThanOrEqualTo=25)
+    print('These are the users between age 18 and 25:')
+    for user in users:
+        print(user)
+
 Gunicorn
 ========
 

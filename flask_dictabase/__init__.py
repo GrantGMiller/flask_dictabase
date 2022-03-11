@@ -4,6 +4,7 @@ import time
 import datetime
 import dataset
 from flask import current_app, _app_ctx_stack
+import operator
 
 DEBUG = False
 
@@ -70,6 +71,26 @@ class Dictabase:
         """
         tableName = cls if isinstance(cls, str) else cls.__name__
 
+        where = kwargs.pop('_where', None)
+        lessThan = kwargs.pop('_lessThan', None)
+        lessThanOrEqualTo = kwargs.pop('_lessThanOrEqualTo', None)
+        greaterThan = kwargs.pop('_greaterThan', None)
+        greaterThanOrEqualTo = kwargs.pop('_greaterThanOrEqualTo', None)
+        equals = kwargs.pop('_equals', None)
+
+        args = []
+        if where:
+            if lessThan:
+                args.append(getattr(self.db[tableName].table.columns, where) < lessThan)
+            if lessThanOrEqualTo:
+                args.append(getattr(self.db[tableName].table.columns, where) <= lessThanOrEqualTo)
+            if greaterThan:
+                args.append(getattr(self.db[tableName].table.columns, where) > greaterThan)
+            if greaterThanOrEqualTo:
+                args.append(getattr(self.db[tableName].table.columns, where) >= greaterThanOrEqualTo)
+            if equals:
+                args.append(getattr(self.db[tableName].table.columns, where) == equals)
+
         reverse = kwargs.pop('_reverse', False)  # bool
         orderBy = kwargs.pop('_orderBy', None)  # str
         if reverse is True:
@@ -82,6 +103,7 @@ class Dictabase:
             with self.db.lock:
                 self.WaitForTransactionsToComplete()
                 for obj in self.db[tableName].find(
+                        *args,
                         order_by=[f'{orderBy}'],
                         **kwargs
                 ):
@@ -89,7 +111,7 @@ class Dictabase:
         else:
             with self.db.lock:
                 self.WaitForTransactionsToComplete()
-                for obj in self.db[tableName].find(**kwargs):
+                for obj in self.db[tableName].find(*args, **kwargs):
                     yield cls(db=self, app=self.app, **obj)
 
     def WaitForTransactionsToComplete(self, timeout=5):
