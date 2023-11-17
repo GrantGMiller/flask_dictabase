@@ -281,12 +281,12 @@ class BaseTable(dict):
         :param removeAll: bool > if True, will remove all matching values
         :return:
         """
-        l = self.Get(key, [])
-        l.remove(value)
-        if removeAll:
-            while value in l:
-                l.remove(value)
-        self.Set(key, l)
+        the_list = self.Get(key, [])
+        while value in the_list:
+            the_list.remove(value)
+            if not removeAll:
+                break
+        self.Set(key, the_list)
 
     def Append(self, key, value, allowDuplicates=True):
         '''
@@ -381,11 +381,12 @@ class BaseTable(dict):
         for item in linkList:
             if item['class'] == cls or cls is None:
                 obj = self.db.FindOne(cls or item['class'], id=item['id'])
-                for k, v in kwargs.items():
-                    if obj[k] != v:
-                        break
-                else:
-                    yield obj
+                if obj:
+                    for k, v in kwargs.items():
+                        if obj[k] != v:
+                            break
+                    else:
+                        yield obj
 
 
 class VariableManager:
