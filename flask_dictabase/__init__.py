@@ -1,32 +1,33 @@
+import datetime
 import json
 import pickle
 import time
-import datetime
+from typing import Any, Callable, Iterator, Mapping, Optional, Type, Union
+
 import dataset
-from flask import current_app, _app_ctx_stack
-import operator
+from flask import Flask, _app_ctx_stack
 
 DEBUG = False
 
 
 class Dictabase:
-    def __init__(self, app=None):
-        self.app = app
+    def __init__(self, app: Optional[Flask] = None) -> None:
+        self.app: Optional[Flask] = app
         if app is not None:
             self.init_app(app)
         self.app.app_context()
-        self.logger = None
+        self.logger: Optional[Callable[[str], Any]] = None
         self.var = VariableManager(self)
 
-    def print(self, *args):
+    def print(self, *args: Any) -> None:
         if self.logger:
             self.logger(f'{datetime.datetime.now()}: ' + ' '.join(str(a) for a in args))
 
-    def init_app(self, app):
+    def init_app(self, app: Flask) -> None:
         app.config.setdefault('DATABASE_URL', 'sqlite:///dictabase.db')
         app.teardown_appcontext(self.teardown)
 
-    def _GetDB(self):
+    def _GetDB(self) -> Any:
         return dataset.connect(
             self.app.config['DATABASE_URL'],
             engine_kwargs={'connect_args': {'check_same_thread': False}} if 'sqlite' in self.app.config[
@@ -34,7 +35,7 @@ class Dictabase:
         )
 
     @property
-    def db(self):
+    def db(self) -> Any:
         ctx = _app_ctx_stack.top
         self.print('_app_ctx_stack.top=', ctx)
         if ctx is not None:
@@ -52,13 +53,13 @@ class Dictabase:
         raise RuntimeError(
             'No AppContext found. You probably tried to access this database from outside a request context (aka outside a View function). Try using "with app.app_context(): DoThing()" instead.')
 
-    def teardown(self, exception):
+    def teardown(self, exception: Optional[BaseException]) -> None:
         try:
             self.db.close()
         except:
             pass
 
-    def FindAll(self, cls, **kwargs):
+    def FindAll(self, cls: Union[Type['BaseTable'], str], **kwargs: Any) -> Iterator['BaseTable']:
         """
         You can paginate by passing {'_offset': int(number)} in kwargs.
         You can limit the number of results by passing {'_limit': int(howmany)} in kwargs.
@@ -86,12 +87,12 @@ class Dictabase:
             #     __where='birth_day',
             #     __equals=11,
             # )
-            where = kwargs.pop('_' * i + 'where', None)
-            lessThan = kwargs.pop('_' * i + 'lessThan', None)
-            lessThanOrEqualTo = kwargs.pop('_' * i + 'lessThanOrEqualTo', None)
-            greaterThan = kwargs.pop('_' * i + 'greaterThan', None)
-            greaterThanOrEqualTo = kwargs.pop('_' * i + 'greaterThanOrEqualTo', None)
-            equals = kwargs.pop('_' * i + 'equals', None)
+            where = kwargs.pop('_' * i + 'where', '')
+            lessThan = kwargs.pop('_' * i + 'lessThan', '')
+            lessThanOrEqualTo = kwargs.pop('_' * i + 'lessThanOrEqualTo', '')
+            greaterThan = kwargs.pop('_' * i + 'greaterThan', '')
+            greaterThanOrEqualTo = kwargs.pop('_' * i + 'greaterThanOrEqualTo', '')
+            equals = kwargs.pop('_' * i + 'equals', '')
 
             if where:
                 if lessThan:
@@ -132,14 +133,14 @@ class Dictabase:
                 for obj in self.db[tableName].find(*args, **kwargs):
                     yield cls(db=self, app=self.app, **obj)
 
-    def WaitForTransactionsToComplete(self, timeout=5):
+    def WaitForTransactionsToComplete(self, timeout: float = 5) -> None:
         startTime = time.time()
         while time.time() - startTime < timeout:
             if not self.db.in_transaction:
                 break
             time.sleep(0.1)
 
-    def FindOne(self, cls, **kwargs):
+    def FindOne(self, cls: Union[Type['BaseTable'], str], **kwargs: Any) -> Optional['BaseTable']:
         tableName = cls if isinstance(cls, str) else cls.__name__
 
         with self.db.lock:
@@ -152,7 +153,7 @@ class Dictabase:
         else:
             return None
 
-    def New(self, cls, **kwargs):
+    def New(self, cls: Union[Type['BaseTable'], str], **kwargs: Any) -> 'BaseTable':
         tableName = cls if isinstance(cls, str) else cls.__name__
 
         ret = None
@@ -164,7 +165,7 @@ class Dictabase:
             ret = cls(db=self, app=self.app, id=newID, **kwargs)
         return ret
 
-    def NewOrFind(self, cls, **kwargs):
+    def NewOrFind(self, cls: Union[Type['BaseTable'], str], **kwargs: Any) -> 'BaseTable':
         # Looks in the database for an existing object, if none, create a new row and return it
         ret = self.FindOne(cls, **kwargs)
         if ret:
@@ -172,7 +173,7 @@ class Dictabase:
         else:
             return self.New(cls, **kwargs)  # create a new object and return it
 
-    def Upsert(self, obj):
+    def Upsert(self, obj: 'BaseTable') -> Any:
         ret = None
         with self.db.lock:
             self.WaitForTransactionsToComplete()
@@ -181,7 +182,7 @@ class Dictabase:
             self.db.commit()
         return ret
 
-    def Delete(self, obj):
+    def Delete(self, obj: 'BaseTable') -> Any:
         # break all links first
         for item in obj.Links():
             obj.Unlink(item)
@@ -194,7 +195,7 @@ class Dictabase:
             self.db.commit()
         return ret
 
-    def Drop(self, cls, confirm=False):
+    def Drop(self, cls: Union[Type['BaseTable'], str], confirm: bool = False) -> Any:
         tableName = cls if isinstance(cls, str) else cls.__name__
 
         if confirm is False:
@@ -209,24 +210,24 @@ class Dictabase:
 
 class BaseTable(dict):
 
-    def __init__(self, *a, **k):
-        self.db = k.pop('db')
-        self.app = k.pop('app')
+    def __init__(self, *a: Any, **k: Any) -> None:
+        self.db: Dictabase = k.pop('db')
+        self.app: Optional[Flask] = k.pop('app')
         super().__init__(*a, **k)
 
-    def Commit(self):
+    def Commit(self) -> Any:
         ret = self.db.Upsert(self)
         return ret
 
-    def __setitem__(self, *a, **k):
+    def __setitem__(self, *a: Any, **k: Any) -> None:
         super().__setitem__(*a, **k)
         self.Commit()
 
-    def update(self, *a, **k):
+    def update(self, *a: Any, **k: Any) -> None:
         super().update(*a, **k)
         self.Commit()
 
-    def Update(self, d):
+    def Update(self, d: Mapping[str, Any]) -> None:
         # same as update, but accounts converts value of type list/dict to json
         for k, v in d.items():
             if isinstance(v, (list, dict)):
@@ -234,7 +235,7 @@ class BaseTable(dict):
             else:
                 self[k] = v
 
-    def __str__(self):
+    def __str__(self) -> str:
         '''
 
         :return: string like '<BaseTable: email=me@website.com(type=str), name=John(type=str), age=33(type=int)>'
@@ -257,10 +258,10 @@ class BaseTable(dict):
             ', '.join(itemsList)
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
-    def Get(self, key, default=None, loader=json.loads):
+    def Get(self, key: str, default: Any = None, loader: Callable[[Any], Any] = json.loads) -> Any:
         value = self.get(key, None)
         if value:
             value = loader(value)
@@ -268,12 +269,15 @@ class BaseTable(dict):
             value = default
         return value
 
-    def Set(self, key, value, dumper=json.dumps, dumperKwargs={'indent': 2, 'sort_keys': True}):
+    def Set(self, key: str, value: Any, dumper: Callable[..., Any] = json.dumps,
+            dumperKwargs: Optional[Mapping[str, Any]] = None) -> None:
+        if dumperKwargs is None:
+            dumperKwargs = {'indent': 2, 'sort_keys': True}
         value = dumper(value, **dumperKwargs)
         self[key] = value
         self.Commit()
 
-    def Remove(self, key, value, removeAll=False):
+    def Remove(self, key: str, value: Any, removeAll: bool = False) -> None:
         """
 
         :param key:
@@ -288,7 +292,7 @@ class BaseTable(dict):
                 break
         self.Set(key, the_list)
 
-    def Append(self, key, value, allowDuplicates=True):
+    def Append(self, key: str, value: Any, allowDuplicates: bool = True) -> None:
         '''
         Usage:
             self.Append('items', item)
@@ -310,7 +314,7 @@ class BaseTable(dict):
             items.append(value)
             self.Set(key, items)
 
-    def SetItem(self, key, subKey, value):
+    def SetItem(self, key: str, subKey: str, value: Any) -> None:
         '''
         Usage:
             self.SetItem(key, subKey, value)
@@ -328,19 +332,19 @@ class BaseTable(dict):
         items[subKey] = value
         self.Set(key, items)
 
-    def GetItem(self, key, subkey, default=None):
+    def GetItem(self, key: str, subkey: str, default: Any = None) -> Any:
         d = self.Get(key, {})
         ret = d.get(subkey, default)
         return ret
 
-    def PopItem(self, key, subkey, default=None):
+    def PopItem(self, key: str, subkey: str, default: Any = None) -> Any:
         d = self.Get(key, {})
         ret = d.pop(subkey, default)
         self.Set(key, d)
         return ret
 
     @property
-    def Count(self):
+    def Count(self) -> int:
         """
 
         :return: int, total number of rows for this table
@@ -348,7 +352,7 @@ class BaseTable(dict):
         tableName = type(self).__name__
         return self.db[tableName].count()
 
-    def Link(self, obj, doubleLink=True):
+    def Link(self, obj: 'BaseTable', doubleLink: bool = True) -> None:
         linkList = self.Get('_links', [], loader=pickle.loads)
         d = {
             'class': type(obj),
@@ -362,7 +366,7 @@ class BaseTable(dict):
         if doubleLink:
             obj.Link(self, doubleLink=False)
 
-    def Unlink(self, obj, doubleUnlink=True):
+    def Unlink(self, obj: 'BaseTable', doubleUnlink: bool = True) -> None:
         linkList = self.Get('_links', [], loader=pickle.loads)
         d = {
             'class': type(obj),
@@ -376,7 +380,7 @@ class BaseTable(dict):
         if doubleUnlink:
             obj.Unlink(self, doubleUnlink=False)
 
-    def Links(self, cls=None, **kwargs):
+    def Links(self, cls: Optional[Type['BaseTable']] = None, **kwargs: Any) -> Iterator['BaseTable']:
         linkList = self.Get('_links', [], loader=pickle.loads)
         for item in linkList:
             if item['class'] == cls or cls is None:
@@ -390,16 +394,16 @@ class BaseTable(dict):
 
 
 class VariableManager:
-    def __init__(self, db):
+    def __init__(self, db: 'Dictabase') -> None:
         self.db = db
 
-    def Set(self, name, value):
+    def Set(self, name: str, value: Any) -> None:
         v = self.db.FindOne(Var, name=name)
         if v is None:
             v = self.db.New(Var, name=name)
         v.Set('value', value)
 
-    def Get(self, name, default=None):
+    def Get(self, name: str, default: Any = None) -> Any:
         v = self.db.FindOne(Var, name=name)
         if v is None:
             v = self.db.New(Var, name=name)

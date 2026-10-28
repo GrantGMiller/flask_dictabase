@@ -1,0 +1,6 @@
+config.py
+dist/*
+dictabase.db
+Pipfile.lock
+script_upload_pypi.py
+.DS_Store

@@ -10,7 +10,9 @@ packages = ['flask_dictabase']
 setup(
     name="flask_dictabase",
 
-    version="1.2.5",
+    version="2.0.1",
+    # 2.0.1 - adding typehints
+    # 2.0.0 - updated to be compatible with Flask 3.x
     # 1.2.5 - feat: when using BaseTable.Remove(key, x), an error will NOT be thrown if x is not in the list
     # 1.2.4 - Added a BaseTable().uuid, so each row is auto-assigned a UUID
     # 1.2.3 - Added Dictabase.FindAll(Table, _where='age', _greaterThan=18, __where='weight', __greaterThan=100)
