@@ -5,8 +5,7 @@ import time
 from typing import Any, Callable, Iterator, Mapping, Optional, Type, Union
 
 import dataset
-from flask import Flask, _app_ctx_stack
-
+from flask import Flask, g, has_app_context
 DEBUG = False
 
 
@@ -36,8 +35,7 @@ class Dictabase:
 
     @property
     def db(self) -> Any:
-        ctx = _app_ctx_stack.top
-        self.print('_app_ctx_stack.top=', ctx)
+        ctx = g
         if ctx is not None:
             if not hasattr(ctx, 'db'):
                 # create a new db connection and attach it to this context
